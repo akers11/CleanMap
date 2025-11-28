@@ -5,19 +5,19 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Добавление контекста базы данных
+// Р”РѕР±Р°РІР»РµРЅРёРµ РєРѕРЅС‚РµРєСЃС‚Р° Р±Р°Р·С‹ РґР°РЅРЅС‹С…
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Настройка аутентификации
+// РќР°СЃС‚СЂРѕР№РєР° Р°СѓС‚РµРЅС‚РёС„РёРєР°С†РёРё
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
-                options.LoginPath = "/Account/Login"; // Путь для страницы входа
-                options.AccessDeniedPath = "/Account/AccessDenied"; // Путь для отказа в доступе
+                options.LoginPath = "/Account/Login"; // РџСѓС‚СЊ РґР»СЏ СЃС‚СЂР°РЅРёС†С‹ РІС…РѕРґР°
+                options.AccessDeniedPath = "/Account/AccessDenied"; // РџСѓС‚СЊ РґР»СЏ РѕС‚РєР°Р·Р° РІ РґРѕСЃС‚СѓРїРµ
             });
 
-// Настройка контроллеров с автоматической проверкой CSRF-токенов
+// РќР°СЃС‚СЂРѕР№РєР° РєРѕРЅС‚СЂРѕР»Р»РµСЂРѕРІ СЃ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРѕР№ РїСЂРѕРІРµСЂРєРѕР№ CSRF-С‚РѕРєРµРЅРѕРІ
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
@@ -26,14 +26,14 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Только по HTTPS
-    options.SlidingExpiration = true; // Обновление времени действия куки
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // РўРѕР»СЊРєРѕ РїРѕ HTTPS
+    options.SlidingExpiration = true; // РћР±РЅРѕРІР»РµРЅРёРµ РІСЂРµРјРµРЅРё РґРµР№СЃС‚РІРёСЏ РєСѓРєРё
 });
 
 
 var app = builder.Build();
 
-// Конфигурация HTTP-запросов
+// РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ HTTP-Р·Р°РїСЂРѕСЃРѕРІ
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -52,7 +52,7 @@ app.UseAuthentication();
 
 app.UseAuthorization();
 
-// Настройка маршрутов
+// РќР°СЃС‚СЂРѕР№РєР° РјР°СЂС€СЂСѓС‚РѕРІ
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Index}/{id?}");
