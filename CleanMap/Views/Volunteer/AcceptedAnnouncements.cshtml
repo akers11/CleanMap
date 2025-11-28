@@ -1,0 +1,283 @@
+﻿@model IEnumerable<CleanMap.Models.Announcement>
+
+@{
+    ViewData["Title"] = "Принятые объявления";
+}
+
+<style>
+    body {
+        background-color: #1E3D2F;
+        font-family: Arial, sans-serif;
+        color: #F0F0E1;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        max-width: 80%;
+        margin: 40px auto;
+        padding: 30px;
+        background-color: #2A4D38;
+        border-radius: 12px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+        text-align: center;
+        font-size: 32px;
+        margin-bottom: 25px;
+    }
+
+    .btn {
+        font-size: 18px;
+        padding: 12px 20px;
+        border-radius: 8px;
+    }
+
+    .btn-primary {
+        background-color: #4CAF50;
+        border: none;
+    }
+
+    .btn-secondary {
+        background-color: #3A7D44;
+        border: none;
+    }
+
+    .btn-danger {
+        background-color: #C0392B;
+        border: none;
+    }
+
+    .filters {
+        display: flex;
+        flex-direction: column; 
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+        .filters input, .filters select {
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            width: 200px;
+        }
+
+    .table {
+        width: 100%;
+        background-color: #365B48;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+        .table th, .table td {
+            padding: 15px;
+            text-align: left;
+            font-size: 18px;
+        }
+
+        .table th {
+            background-color: #4E7A5A;
+            color: #FFF;
+        }
+
+        .table tbody tr {
+            transition: background 0.3s;
+        }
+
+            .table tbody tr:hover {
+                background-color: #567D64;
+                cursor: pointer;
+            }
+
+    .announcement-text,
+    .announcement-date,
+    .announcement-city {
+        color: #F0F0E1;
+    }
+
+    .announcement-status {
+        color: #F0F0E1; 
+    }
+
+    .alert {
+        background-color: #3A7D44;
+        border: none;
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+    }
+
+    .filters input {
+        display: inline-block;
+        width: 200px;
+    }
+</style>
+
+<div class="container">
+    <form id="csrfForm">
+        @Html.AntiForgeryToken()
+    </form>
+
+    <div class="d-flex justify-content-between align-items-center" style="margin-bottom: 20px;">
+        <h1>Принятые объявления</h1>
+        <a href="javascript:history.back()" class="btn btn-secondary">Назад</a>
+    </div>
+
+    <!-- Вывод сообщения -->
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert">
+            @TempData["Message"]
+        </div>
+    }
+
+    <!-- Фильтры -->
+    <div style="margin-bottom: 20px; display: flex; gap: 15px;">
+        <input type="text" id="searchBox" placeholder="Поиск по описанию..." class="form-control" style="width: 200px;">
+        <input type="date" id="dateFilter" class="form-control" style="width: 200px;">
+        <input type="text" id="cityFilter" placeholder="Город" class="form-control" style="width: 200px;">
+        <select id="statusFilter" class="form-control" style="width: 200px;">
+            <option value="">Все статусы</option>
+            <option value="В работе">В работе</option>
+            <option value="Выполнено">Выполнено</option>
+        </select>
+        <button onclick="applyFilters()" class="btn btn-primary">Применить фильтры</button>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <p>У вас нет принятых объявлений.</p>
+    }
+    else
+    {
+        <table id="announcementTable" class="table">
+            <thead>
+                <tr>
+                    <th>Описание</th>
+                    <th>Дата создания</th>
+                    <th>Город</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var announcement in Model)
+                {
+                    <tr onclick="goToDetails(@announcement.Id)" style="cursor: pointer;">
+                        <td class="announcement-text">@announcement.Description</td>
+                        <td class="announcement-date">@announcement.CreationDate.ToString("dd.MM.yyyy")</td>
+                        <td class="announcement-city">@announcement.City</td>
+                        <td class="announcement-status">@announcement.Status</td>
+                        <td>
+                            @if (announcement.Status == "В работе")
+                            {
+                                <button class="btn btn-success" onclick="event.stopPropagation(); markAsCompleted(@announcement.Id)">Выполнить</button>
+                                <button class="btn btn-danger" onclick="event.stopPropagation(); declineAnnouncement(@announcement.Id)">Отказаться</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<script>
+    function applyFilters() {
+        const search = document.getElementById("searchBox").value.toLowerCase();
+        const date = document.getElementById("dateFilter").value;
+        const city = document.getElementById("cityFilter").value.toLowerCase();
+        const status = document.getElementById("statusFilter").value;
+
+        const rows = document.querySelectorAll("#announcementTable tbody tr");
+
+        rows.forEach(row => {
+            const columns = row.querySelectorAll("td");
+            const description = columns[0].innerText.toLowerCase();
+            const creationDate = columns[1].innerText.trim();
+            const announcementCity = columns[2].innerText.trim().toLowerCase();
+            const announcementStatus = columns[3]?.innerText?.trim();
+
+            let show = true;
+
+            if (search && !description.includes(search)) {
+                show = false;
+            }
+
+            if (date && creationDate !== new Date(date).toLocaleDateString("ru-RU")) {
+                show = false;
+            }
+
+            if (city && !announcementCity.includes(city)) {
+                show = false;
+            }
+
+            if (status && announcementStatus !== status) {
+                show = false;
+            }
+
+            row.style.display = show ? "" : "none";
+        });
+    }
+
+    function goToDetails(id) {
+        location.href = `/Volunteer/AnnouncementDetails/${id}`;
+    }
+
+    // Функция для получения CSRF-токена
+    function getCsrfToken() {
+        const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenElement ? tokenElement.value : '';
+    }
+
+    function markAsCompleted(announcementId) {
+        fetch(`/Volunteer/MarkAsCompleted/${announcementId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getCsrfToken()
+            }
+        })
+            .then(response => {
+                if (response.ok) {
+                    alert('Объявление отмечено как выполненное!');
+                    location.reload();
+                } else {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Произошла ошибка при изменении статуса.');
+            });
+    }
+
+    function declineAnnouncement(id) {
+        if (confirm("Вы уверены, что хотите отказаться от выполнения этого объявления?")) {
+            fetch('/Volunteer/DeclineAnnouncement', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getCsrfToken()
+                },
+                body: JSON.stringify(id)  // Отправление ID в JSON-формате
+            })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        return response.text().then(text => { throw new Error(text) });
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    alert('Произошла ошибка при отказе от объявления.');
+                });
+        }
+    }
+
+
+</script>

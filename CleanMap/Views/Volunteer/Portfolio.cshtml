@@ -1,0 +1,143 @@
+﻿@{
+    ViewData["Title"] = "Моё портфолио";
+}
+
+<style>
+    body {
+        background-color: #1E3D2F;
+        font-family: Arial, sans-serif;
+        color: #F0F0E1;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        max-width: 80%;
+        margin: 40px auto;
+        padding: 30px;
+        background-color: #2A4D38;
+        border-radius: 12px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+        font-size: 32px;
+        margin-bottom: 25px;
+    }
+
+    .btn {
+        font-size: 18px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background-color: #4CAF50;
+        border: none;
+    }
+
+    .btn-secondary {
+        background-color: #3A7D44;
+        border: none;
+    }
+
+    .volunteer-info {
+        background-color: #365B48;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .table {
+        width: 100%;
+        background-color: #365B48;
+        border-radius: 8px;
+        overflow: hidden;
+        color: #FFF; 
+    }
+
+        .table th, .table td {
+            padding: 15px;
+            text-align: left;
+            font-size: 18px;
+            border-color: #F0F0E1;
+        }
+
+        .table th {
+            background-color: #4E7A5A;
+            color: #FFF;
+        }
+
+        .table tbody tr {
+            transition: background 0.3s;
+        }
+
+            .table tbody tr:hover {
+                background-color: #567D64;
+                cursor: pointer;
+            }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+</style>
+
+<div class="container">
+    <div class="header">
+        <h1>Моё портфолио</h1>
+        <a href="@Url.Action("VolunteerDashboard", "Volunteer")" class="btn btn-secondary">Назад</a>
+    </div>
+
+    <div class="volunteer-info">
+        <h3>Волонтёрская книжка</h3>
+        @if (ViewBag.VolunteerBook == null)
+        {
+            <form asp-controller="Volunteer" asp-action="AddVolunteerBook" method="post">
+                <input type="number" name="bookNumber" required class="form-control" style="width: 200px; display: inline-block;" />
+                <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+        }
+        else
+        {
+            <p>Номер книжки: <strong>@ViewBag.VolunteerBook</strong></p>
+        }
+    </div>
+
+    <h3>Мои объявления</h3>
+    @if (ViewBag.CompletedAnnouncements != null && ViewBag.CompletedAnnouncements.Count > 0)
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Принято в работу</th>
+                    <th>Выполнено</th>
+                    <th>Статус</th>
+                    <th>Часы работы</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in ViewBag.CompletedAnnouncements)
+                {
+                    <tr>
+                        <td>@item.AnnouncementId</td>
+                        <td>@item.AcceptedAt.ToString("g")</td>
+                        <td>@(item.CompletedAt == null ? "В работе" : item.CompletedAt?.ToString("g"))</td>
+                        <td>@item.Status</td>
+                        <td>@item.HoursSpent</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>У вас пока нет объявлений.</p>
+    }
+</div>

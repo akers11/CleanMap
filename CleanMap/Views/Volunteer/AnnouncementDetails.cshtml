@@ -1,0 +1,106 @@
+﻿@model CleanMap.Models.Announcement
+
+@{
+    ViewData["Title"] = "Подробности объявления";
+}
+
+<style>
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f2e9;
+        display: block;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .container {
+        max-width: 1200px !important;
+        width: 100%;
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-control {
+        margin-bottom: 15px;
+    }
+
+    .map-container {
+        width: 100%;
+        height: 400px;
+        margin-top: 20px;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    .btn {
+        margin-top: 20px;
+    }
+
+    #map {
+        width: 100% !important;
+        height: 400px !important;
+    }
+
+    .announcement-details {
+        margin-bottom: 20px;
+    }
+
+        .announcement-details p {
+            margin: 10px 0;
+        }
+</style>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center" style="margin-bottom: 20px;">
+        <h1>Детализация объявления</h1>
+        <a href="javascript:history.back()" class="btn btn-secondary">Назад</a>
+    </div>
+
+    <div class="announcement-details">
+        <p><strong>Описание:</strong> @Model.Description</p>
+        <p><strong>Дата создания:</strong> @Model.CreationDate.ToString("dd.MM.yyyy")</p>
+        <p><strong>Город:</strong> @Model.City</p>
+        <p><strong>Адрес:</strong> @(string.IsNullOrWhiteSpace(Model.Address) ? "Адрес не указан" : Model.Address)</p>
+        <p><strong>Волонтёр:</strong> @(string.IsNullOrWhiteSpace(Model.AssignedVolunteer) ? "Не назначен" : Model.AssignedVolunteer)</p>
+    </div>
+
+    <div class="map-container">
+        <label>Карта</label>
+        <div id="map"></div>
+    </div>
+
+    @if (Model.Status.Equals("Создано", StringComparison.OrdinalIgnoreCase) &&
+    (string.IsNullOrWhiteSpace(Model.AssignedVolunteer) ||
+    Model.AssignedVolunteer.Equals("Не назначен", StringComparison.OrdinalIgnoreCase)))
+    {
+        <form asp-action="AcceptAnnouncement" asp-controller="Volunteer" method="post">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button type="submit" class="btn btn-primary">Принять в работу</button>
+        </form>
+    }
+</div>
+
+<script src="https://maps.api.2gis.ru/2.0/loader.js?pkg=full"></script>
+<script>
+    DG.then(function () {
+        // Координаты из модели (широта и долгота)
+        var coords = "@Model.GeoLocation".split(',');
+
+        // Инициализация карты
+        var map = DG.map('map', {
+            center: [parseFloat(coords[0]), parseFloat(coords[1])],
+            zoom: 15
+        });
+
+        // Добавление метки на карту
+        DG.marker([parseFloat(coords[0]), parseFloat(coords[1])]).addTo(map);
+    });
+</script>

@@ -1,0 +1,416 @@
+﻿@model IEnumerable<CleanMap.Models.Announcement>
+
+@{
+    ViewData["Title"] = "Объявления";
+}
+
+<style>
+    body {
+        background-color: #1E3D2F;
+        font-family: Arial, sans-serif;
+        color: #F0F0E1;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        max-width: 80%;
+        margin: 40px auto;
+        padding: 30px;
+        background-color: #2A4D38;
+        border-radius: 12px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+        text-align: center;
+        font-size: 32px;
+        margin-bottom: 25px;
+    }
+
+    .btn {
+        font-size: 18px;
+        padding: 12px 20px;
+        border-radius: 8px;
+    }
+
+    .btn-primary {
+        background-color: #4CAF50;
+        border: none;
+    }
+
+    .btn-secondary {
+        background-color: #3A7D44;
+        border: none;
+    }
+
+    .btn-danger {
+        background-color: #C0392B;
+        border: none;
+        float: right;
+    }
+
+    .filters {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+        .filters input, .filters select {
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            width: 200px;
+        }
+
+    .table {
+        width: 100%;
+        background-color: #365B48;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+        .table th, .table td {
+            padding: 15px;
+            text-align: left;
+            font-size: 18px;
+        }
+
+        .table th {
+            background-color: #4E7A5A;
+            color: #FFF;
+        }
+
+        .table tbody tr {
+            transition: background 0.3s;
+        }
+
+            .table tbody tr:hover {
+                background-color: #567D64;
+                cursor: pointer;
+            }
+
+    .announcement-text,
+    .announcement-date,
+    .announcement-status,
+    .announcement-city {
+        color: #F0F0E1; 
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        background-color: #2A4D38;
+        margin: 10% auto;
+        padding: 20px;
+        width: 50%;
+        border-radius: 8px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+        color: #F0F0E1;
+    }
+
+    .close {
+        color: #F0F0E1;
+        float: right;
+        font-size: 28px;
+        cursor: pointer;
+    }
+
+    .chat-table {
+        width: 100%;
+        margin-top: 15px;
+        border-collapse: collapse;
+    }
+
+        .chat-table th, .chat-table td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        .chat-table th {
+            background-color: #4E7A5A;
+            color: white;
+        }
+
+        .chat-table tr:hover {
+            background-color: #567D64;
+            cursor: pointer;
+        }
+
+        .chat-table td a {
+            color: white !important;
+            text-decoration: none;
+        }
+
+            .chat-table td a:hover {
+                text-decoration: underline;
+            }
+
+</style>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center" style="margin-bottom: 20px;">
+        <h1>Мои объявления</h1>
+        @using (Html.BeginForm("Logout", "Account", FormMethod.Post))
+        {
+            <button type="submit" class="btn btn-danger">Выйти</button>
+        }
+    </div>
+
+    <!-- Кнопки управления -->
+    <div class="mb-3">
+        <a href="@Url.Action("CreateAnnouncement", "Citizen")" class="btn btn-primary">Создать объявление</a>
+        <a href="#" class="btn btn-secondary" onclick="openChatModal()">Чаты с волонтёрами</a>
+        <a href="@Url.Action("Statistics", "Account")" class="btn btn-secondary">Результаты работы сайта</a>
+    </div>
+
+    <!-- Фильтры и поиск -->
+    <div class="mb-4">
+        <input type="text" id="searchBox" placeholder="Поиск по описанию..." class="form-control d-inline-block" style="width: 200px;">
+        <select id="statusFilter" class="form-select d-inline-block" style="width: 150px;">
+            <option value="">Все</option>
+            <option value="Создано">Создано</option>
+            <option value="В работе">В работе</option>
+            <option value="Выполнено">Выполнено</option>
+        </select>
+        <input type="date" id="dateFilter" class="form-control d-inline-block" style="width: 200px;">
+        <input type="text" id="cityFilter" placeholder="Город" class="form-control d-inline-block" style="width: 200px;">
+        <button onclick="applyFilters()" class="btn btn-primary">Применить фильтры</button>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <p>Список объявлений пуст</p>
+    }
+    else
+    {
+        <table id="announcementTable" class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Описание</th>
+                    <th>Дата создания</th>
+                    <th>Статус</th>
+                    <th>Город</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var announcement in Model)
+                {
+                    <tr onclick="location.href='@Url.Action("AnnouncementDetails", "Citizen", new { id = announcement.Id })'">
+                        <td class="announcement-text">@announcement.Description</td>
+                        <td class="announcement-date">@announcement.CreationDate.ToString("dd.MM.yyyy")</td>
+                        <td class="announcement-status">@announcement.Status</td>
+                        <td class="announcement-city">@announcement.City</td>
+                    </tr>
+                }
+            </tbody>
+
+
+        </table>
+    }
+    <!-- Модальное окно для чатов -->
+    <div id="chatModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeChatModal()">&times;</span>
+            <h2>Мои чаты</h2>
+            <table class="chat-table">
+                <thead>
+                    <tr>
+                        <th>Объявление</th>
+                        <th>Волонтёр</th>
+                        <th>Дата</th>
+                        <th> </th>
+                    </tr>
+                </thead>
+                <tbody id="chatTableBody">
+                    <!-- Данные загружаются динамически -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="chatMessagesModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeChatMessagesModal()">&times;</span>
+            <h2 id="chatTitle">Чат</h2>
+            <div id="chatMessages" style="max-height: 300px; overflow-y: auto; background: #365B48; padding: 10px; border-radius: 8px;"></div>
+            <textarea id="messageText" class="form-control" rows="3" placeholder="Введите сообщение"></textarea>
+            <button onclick="sendMessage()" class="btn btn-primary" style="margin-top: 10px;">Отправить</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function applyFilters() {
+        const search = document.getElementById("searchBox").value.toLowerCase();
+        const status = document.getElementById("statusFilter").value;
+        const date = document.getElementById("dateFilter").value;
+        const city = document.getElementById("cityFilter").value.toLowerCase();
+
+        // Получение всех строк таблицы
+        const rows = document.querySelectorAll("#announcementTable tbody tr");
+
+        rows.forEach(row => {
+            const columns = row.querySelectorAll("td");
+
+            // Извлечение данных из строки таблицы
+            const description = columns[0].innerText.toLowerCase();
+            const creationDate = columns[1].innerText.trim();
+            const announcementStatus = columns[2].innerText.trim();
+            const announcementCity = columns[3].innerText.trim().toLowerCase();
+
+            let show = true;
+
+            if (search && !description.includes(search)) {
+                show = false;
+            }
+
+            if (status && announcementStatus !== status) {
+                show = false;
+            }
+
+            if (date && creationDate !== new Date(date).toLocaleDateString("ru-RU")) {
+                show = false;
+            }
+
+            if (city && !announcementCity.includes(city)) {
+                show = false;
+            }
+
+            row.style.display = show ? "" : "none";
+        });
+    }
+</script>
+
+<script>
+    function openChatModal() {
+        document.getElementById("chatModal").style.display = "block";
+        loadChats();
+    }
+
+    function closeChatModal() {
+        document.getElementById("chatModal").style.display = "none";
+    }
+
+    async function loadChats() {
+        try {
+            let response = await fetch('/Chat/GetCitizenChats');
+            let chats = await response.json();
+            let tableBody = document.getElementById("chatTableBody");
+            tableBody.innerHTML = "";
+
+            if (chats.length === 0) {
+                tableBody.innerHTML = "<tr><td colspan='4'>Нет активных чатов</td></tr>";
+                return;
+            }
+
+            chats.forEach(chat => {
+                let row = `<tr onclick="openChatModalWindow(${chat.id}, '${chat.announcement}', '${chat.volunteer}')">
+                   <td>${chat.announcement}</td>
+                   <td>${chat.volunteer}</td>
+                   <td>${new Date(chat.createdAt).toLocaleString()}</td>
+                   <td><a href="#" onclick="openChatModalWindow(${chat.id}, '${chat.announcement}', '${chat.volunteer}'); return false;">Открыть</a></td>
+               </tr>`;
+
+                tableBody.innerHTML += row;
+            });
+        } catch (error) {
+            console.error("Ошибка загрузки чатов:", error);
+        }
+    }
+
+</script>
+
+<script>
+    let currentChatId = null;
+
+    function openChatModalWindow(chatId, announcement, volunteer) {
+        document.getElementById("chatMessagesModal").style.display = "block";
+        document.getElementById("chatTitle").innerText = `Чат по объявлению: ${announcement}`;
+        currentChatId = chatId;
+
+        // Очистка текстового поля перед загрузкой сообщений
+        document.getElementById("messageText").value = "";
+
+        loadChatMessages(chatId);
+    }
+
+
+    function closeChatMessagesModal() {
+        document.getElementById("chatMessagesModal").style.display = "none";
+    }
+
+    async function loadChatMessages(chatId) {
+        try {
+            let response = await fetch(`/Chat/GetChatMessages?chatId=${chatId}`);
+            let messages = await response.json();
+            let chatContainer = document.getElementById("chatMessages");
+            chatContainer.innerHTML = "";
+
+            if (messages.length === 0) {
+                chatContainer.innerHTML = "<p>Сообщений пока нет.</p>";
+                return;
+            }
+
+            messages.forEach(msg => {
+                let messageElement = `<div><strong>${msg.sender}:</strong> ${msg.text} <br>
+                                      <small>${new Date(msg.sentAt).toLocaleString()}</small></div><hr>`;
+                chatContainer.innerHTML += messageElement;
+            });
+        } catch (error) {
+            console.error("Ошибка загрузки сообщений:", error);
+        }
+    }
+
+    function sendMessage() {
+        const textArea = document.getElementById("messageText");
+        const text = textArea.value.trim();
+
+        if (!text) {
+            alert("Сообщение не может быть пустым.");
+            return;
+        }
+
+        const csrfMetaTag = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfMetaTag) {
+            alert("Ошибка: CSRF-токен не найден.");
+            return;
+        }
+        const csrfToken = csrfMetaTag.getAttribute("content");
+
+        fetch('/Chat/SendMessage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': csrfToken
+            },
+            body: JSON.stringify({ chatId: currentChatId, text: text })
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    textArea.value = "";
+                    loadChatMessages(currentChatId);
+                } else {
+                    alert(result.error || "Ошибка при отправке сообщения.");
+                }
+            })
+            .catch(error => {
+                console.error("Ошибка отправки сообщения:", error);
+                alert("Ошибка при отправке сообщения.");
+            });
+    }
+ 
+
+</script>

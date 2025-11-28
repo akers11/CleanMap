@@ -1,0 +1,125 @@
+﻿@model CleanMap.Models.Announcement
+
+@{
+    ViewData["Title"] = "Создать объявление";
+}
+
+<style>
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f2e9;
+        display: block;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .container {
+        max-width: 1200px !important;
+        width: 100%;
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    #map {
+        width: 100%;
+        height: 500px;
+        border-radius: 5px;
+    }
+
+    .form-control {
+        margin-bottom: 15px;
+    }
+</style>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center" style="margin-bottom: 20px;">
+        <h1>Создать объявление</h1>
+        <a href="javascript:history.back()" class="btn btn-secondary">Назад</a>
+    </div>
+
+    <form asp-action="CreateAnnouncement" method="post">
+        <div>
+            <label>Описание</label>
+            <textarea asp-for="Description" class="form-control"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+
+        <div>
+            <label>Город</label>
+            <input asp-for="City" class="form-control" />
+            <span asp-validation-for="City" class="text-danger"></span>
+        </div>
+
+        <div>
+            <label>Местоположение</label>
+            <div id="map"></div>
+            <input type="hidden" asp-for="GeoLocation" id="geoLocation" />
+            <span asp-validation-for="GeoLocation" class="text-danger"></span>
+        </div>
+
+        <input type="hidden" asp-for="Address" id="address" />
+
+        <button type="submit" class="btn btn-success" style="width: 100%; padding: 10px; font-size: 16px;">Создать</button>
+    </form>
+</div>
+
+<script src="https://maps.api.2gis.ru/2.0/loader.js?pkg=full"></script>
+<script>
+    var map, marker;
+
+    DG.then(function () {
+        map = DG.map('map', {
+            center: [55.7558, 37.6173], // Москва
+            zoom: 10
+        });
+
+        marker = DG.marker([55.7558, 37.6173], { draggable: true }).addTo(map);
+
+        marker.on('dragend', function (e) {
+            const latlng = e.target.getLatLng();
+            updateGeoLocation(latlng.lat, latlng.lng);
+        });
+
+        map.on('click', function (e) {
+            const latlng = e.latlng;
+            marker.setLatLng(latlng);
+            updateGeoLocation(latlng.lat, latlng.lng);
+        });
+    });
+
+    async function updateGeoLocation(lat, lng) {
+        document.getElementById('geoLocation').value = `${lat},${lng}`;
+
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const data = await response.json();
+
+            if (data.address) {
+                let city = data.address.city ||
+                    data.address.town ||
+                    data.address.village ||
+                    data.address.hamlet ||
+                    data.address.municipality ||
+                    data.address.county ||
+                    "Неизвестный населенный пункт";
+
+                document.getElementById('address').value = data.display_name || "Адрес не найден";
+
+                // Проверка введенного пользователем населённого пункта
+                let userCity = document.getElementById('City').value.trim();
+                if (userCity.toLowerCase() !== city.toLowerCase()) {
+                    document.getElementById('City').value = city; // Автозаполнение
+                }
+            }
+        } catch (error) {
+            console.error("Ошибка геокодирования:", error);
+            document.getElementById('address').value = "Ошибка геокодирования";
+        }
+    }
+</script>
+
+
